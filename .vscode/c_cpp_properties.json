@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "~/.conan2/p/caf*/s/src/**",
+                "~/.conan2/p/sobje*/s/src/dev/**",
+                "~/.conan2/p/spdlo*/s/src/**",
+                "~/.conan2/p/gtest*/p/include/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "cStandard": "c23"
+        }
+    ],
+    "version": 4
+}

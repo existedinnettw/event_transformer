@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools-extension-pack",
+        "mhutchie.git-graph",
+        "ms-vscode-remote.remote-ssh",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "bierner.markdown-mermaid",
+        "yzhang.markdown-all-in-one",
+        "hediet.vscode-drawio",
+        "cheshirekow.cmake-format",
+        "charliermarsh.ruff"
+    ]
+}
