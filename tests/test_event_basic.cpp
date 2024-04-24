@@ -80,6 +80,7 @@ TEST_F(Evt_trans_test, create_test)
   // static_cast<EventList<AEvent>>(foo).dispatch(a_ev);
   // static_cast<Foo>(foo).dispatch(a_ev);
   static_cast<EventList<AEvent>&>(foo).dispatch(a_ev);
+  dispatch(foo, a_ev);
   static_cast<EventList<BEvent>&>(foo).dispatch(b_ev);
   // foo.dispatch(a_ev);
   foo.dispatch(std::ref(a_ev));
@@ -97,73 +98,19 @@ TEST_F(Evt_trans_test, create_test)
 #include <typeinfo>
 
 /**
- * @details
- * I want this be interface only.
- * @todo require a dynamic map to map from rtti typeinfo to coresponding function。
+ * @brief
+ * as an interface for fake module process
  */
-class Fake_module_process_ev : public EventList<AEvent, BEvent>
-{
-  //   struct Concept
-  //   { // (5)
-  //     virtual ~Concept()
-  //     {
-  //     }
-  //     virtual void dispatch() = 0;
-  //   };
-
-  //   std::unique_ptr<Concept> pimpl_;
-
-  //   template<typename T> // (6)
-  //   struct Model : Concept
-  //   {
-  //     Model(const T& t)
-  //       : object(t)
-  //     {
-  //     }
-  //     void dispatch() override
-  //     {
-  //       return object.dispatch();
-  //     }
-
-  //   private:
-  //     T object;
-  //   };
-
-
-public:
-  //   /**
-  //    * @todo type erase
-  //    * @see https://www.hmoonotes.org/2023/06/cpp-type-erasure.html
-  //    * @see https://www.modernescpp.com/index.php/type-erasure/
-  //    */
-  //   // template<typename EVT>
-  //   // void dispatch(EVT evt)
-  //   // {
-  //   //   // I want to override this. (type erase)
-  //   //   std::cout << "base interface\n";
-  //   // };
-  template<typename EVT>
-  void dispatch(EVT evt)
-  {
-    using namespace std;
-    // for (auto const& [key, val] : fmap) {
-    // }
-    auto func = std::any_cast<std::function<void(EVT&)>>(fmap.at(type_index(typeid(EVT))));
-    func(evt); // dispatch
-  };
-
-protected:
-  // void (*)(std::any &);
-  std::map<std::type_index, std::any> fmap;
-}; // Fake_module_process_ev
+class Fake_module_process_ev : virtual public EventList<AEvent, BEvent>
+{}; // end of Fake_module_process_ev
 
 /**
  * 用friend 會變成 `dispatch(foo, a_event);` 而非 `foo.dispatch(a_event);`
  */
 
 /**
- * I wan't this be implement.
- * 模板派生类
+ * @brief
+ * real implement
  */
 // template<typename Functor>
 class So5_fake_module_process_ev : virtual public Fake_module_process_ev
@@ -174,22 +121,19 @@ public:
   So5_fake_module_process_ev(so_5::mbox_t target_)
     : target(target_)
   {
-    using namespace std;
-    // iterate over all the inherit class and generate function from functor.
-    //
-    std::function<void(AEvent&)> func = [this](AEvent& evt) -> void { so_5::send<AEvent>(target); };
-    fmap[type_index(typeid(AEvent))] = std::any(func);
-    // Functor<>;
   }
-  // template<typename EVT>
-  // void dispatch(EVT evt)
-  // {
-  //   // cout << "this is additional wrapper from event name: " << evt.name << "\n";
-  //   cout << "this is additional wrapper from event name: "
-  //        << "\n";
-  //   // static_cast<EventList<decltype(evt)>&>(*this).dispatch(evt);
-  //   so_5::send<EVT>(target);
-  // }
+
+  void dispatch(const AEvent& evt) override
+  {
+    cout << "handling AEvent" << endl;
+    so_5::send<AEvent>(target, evt);
+  }
+
+  void dispatch(const BEvent& evt) override
+  {
+    cout << "handling BEvent" << endl;
+    so_5::send<BEvent>(target, evt);
+  }
 };
 
 /**
@@ -202,8 +146,9 @@ fake_module_process(Fake_module_process_ev* evt_li_ptr)
   std::cout << "fake module called\n";
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   const AEvent a_ev = AEvent{ .speed = 5.0 };
-  evt_li_ptr->dispatch(a_ev);
-  // static_cast<EventList<decltype(a_ev)>&>(*evt_li_ptr).dispatch(a_ev);
+  // evt_li_ptr->dispatch(std::ref(a_ev));
+  // static_cast<EventList<AEvent>&>(*evt_li_ptr).dispatch(a_ev);
+  dispatch(evt_li_ptr, a_ev);
   std::cout << "fake module exist\n";
   //
 }

@@ -32,10 +32,10 @@ class event_transformerRecipe(ConanFile):
         # test
         self.test_requires("gtest/[~1.13]")
         self.test_requires("sobjectizer/[~5.8]")
-        self.test_requires("eventpp/[~0.1]")
-        self.test_requires("sigslot/[~1.2]")
-        self.test_requires("caf/[~0.19]")
-        self.test_requires("spdlog/[~1.13]")
+        # self.test_requires("eventpp/[~0.1]")
+        # self.test_requires("sigslot/[~1.2]")
+        # self.test_requires("caf/[~0.19]")
+        # self.test_requires("spdlog/[~1.13]")
 
     def validate(self):
         check_min_cppstd(self, "17")
