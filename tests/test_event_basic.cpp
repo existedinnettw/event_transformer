@@ -57,6 +57,9 @@ class Foo_pp : public Foo
 
 public:
   // for c++ 17
+  /**
+   * if cast back to Foo, template function will disapear.
+   */
   template<typename EVT>
   void dispatch(EVT evt)
   {
@@ -101,61 +104,8 @@ TEST_F(Evt_trans_test, create_test)
  * I want this be interface only.
  * @todo require a dynamic map to map from rtti typeinfo to coresponding function。
  */
-class Fake_module_process_ev : public EventList<AEvent, BEvent>
-{
-  //   struct Concept
-  //   { // (5)
-  //     virtual ~Concept()
-  //     {
-  //     }
-  //     virtual void dispatch() = 0;
-  //   };
-
-  //   std::unique_ptr<Concept> pimpl_;
-
-  //   template<typename T> // (6)
-  //   struct Model : Concept
-  //   {
-  //     Model(const T& t)
-  //       : object(t)
-  //     {
-  //     }
-  //     void dispatch() override
-  //     {
-  //       return object.dispatch();
-  //     }
-
-  //   private:
-  //     T object;
-  //   };
-
-
-public:
-  //   /**
-  //    * @todo type erase
-  //    * @see https://www.hmoonotes.org/2023/06/cpp-type-erasure.html
-  //    * @see https://www.modernescpp.com/index.php/type-erasure/
-  //    */
-  //   // template<typename EVT>
-  //   // void dispatch(EVT evt)
-  //   // {
-  //   //   // I want to override this. (type erase)
-  //   //   std::cout << "base interface\n";
-  //   // };
-  template<typename EVT>
-  void dispatch(EVT evt)
-  {
-    using namespace std;
-    // for (auto const& [key, val] : fmap) {
-    // }
-    auto func = std::any_cast<std::function<void(EVT&)>>(fmap.at(type_index(typeid(EVT))));
-    func(evt); // dispatch
-  };
-
-protected:
-  // void (*)(std::any &);
-  std::map<std::type_index, std::any> fmap;
-}; // Fake_module_process_ev
+class Fake_module_process_ev : virtual public EventList<AEvent, BEvent>
+{}; // Fake_module_process_ev
 
 /**
  * 用friend 會變成 `dispatch(foo, a_event);` 而非 `foo.dispatch(a_event);`
@@ -168,6 +118,8 @@ protected:
 // template<typename Functor>
 class So5_fake_module_process_ev : virtual public Fake_module_process_ev
 {
+  using EventList<AEvent>::dispatch; // to disable warning
+
   so_5::mbox_t target;
 
 public:
@@ -177,23 +129,21 @@ public:
     using namespace std;
     // iterate over all the inherit class and generate function from functor.
     //
-    std::function<void(AEvent&)> func = [this](AEvent& evt) -> void { so_5::send<AEvent>(target); };
+    std::function<void(AEvent&)> func = [this](AEvent& evt) -> void {
+      // so_5::send<AEvent>(target, evt.speed); //both work, but this isn't
+      so_5::send<AEvent>(target, evt);
+    };
     fmap[type_index(typeid(AEvent))] = std::any(func);
     // Functor<>;
   }
-  // template<typename EVT>
-  // void dispatch(EVT evt)
-  // {
-  //   // cout << "this is additional wrapper from event name: " << evt.name << "\n";
-  //   cout << "this is additional wrapper from event name: "
-  //        << "\n";
-  //   // static_cast<EventList<decltype(evt)>&>(*this).dispatch(evt);
-  //   so_5::send<EVT>(target);
-  // }
+  void dispatch(const BEvent& evt) override
+  {
+    std::cout << "So5_fake is handling BEvent" << endl;
+  }
 };
 
 /**
- * simulate module process which require event interface
+ * simulate module process which require event interface but hide implement.
  */
 void
 fake_module_process(Fake_module_process_ev* evt_li_ptr)
@@ -202,8 +152,13 @@ fake_module_process(Fake_module_process_ev* evt_li_ptr)
   std::cout << "fake module called\n";
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   const AEvent a_ev = AEvent{ .speed = 5.0 };
-  evt_li_ptr->dispatch(a_ev);
+  // static_cast<EventList<>*>(evt_li_ptr)->dispatch(a_ev);
+  // static_cast<EventList<>*>(evt_li_ptr)->dispatch(a_ev);
+  // evt_li_ptr->ev_dispatch(a_ev);
   // static_cast<EventList<decltype(a_ev)>&>(*evt_li_ptr).dispatch(a_ev);
+  dispatch(evt_li_ptr, a_ev);
+  const BEvent b_ev = BEvent();
+  dispatch(evt_li_ptr, b_ev);
   std::cout << "fake module exist\n";
   //
 }
@@ -213,7 +168,7 @@ class pinger final : public so_5::agent_t
 
   void on_pong(mhood_t<AEvent> cmd)
   {
-    std::cout << "actor pinger: received a A event\n";
+    std::cout << "actor pinger: received a A event, speed: " << cmd->speed << ".\n";
   }
 
 public:
