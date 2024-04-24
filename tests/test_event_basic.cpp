@@ -21,6 +21,7 @@ using namespace ::testing;
 
 /**
  * original required by `events` lib
+ * Primary template.
  */
 class BaseEvent
 {};
@@ -207,4 +208,31 @@ TEST_F(Evt_trans_test, so5_fake_module_test)
     env.stop();
   }); // end of so5 launch
 }
+
+/********************************************************************************************************/
+template<typename Evt>
+class Test
+{
+public:
+  void operator()(void)
+  {
+    cout << "empty test\n";
+  };
+};
+
+class Functor_fake_module_process_ev : virtual public Fake_module_process_ev
+{
+public:
+  Functor_fake_module_process_ev()
+  {
+    EventList<Test<AEvent>, AEvent, BEvent>(); //.fmap
+  };
+};
+
+
+TEST(testCase, functor_test)
+{
+  auto t = Functor_fake_module_process_ev();
+}
+
 }
